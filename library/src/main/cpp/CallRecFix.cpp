@@ -19,7 +19,13 @@ limitations under the License.*/
 #include <malloc.h>
 #include <android/log.h>
 #include "audio.h"
+#include <dlfcn.h>
 
+extern "C" {
+extern void *fake_dlopen(const char *filename, int flags);
+extern void *fake_dlsym(void *handle, const char *symbol);
+extern int fake_dlclose(void *handle);
+}
 
 #define TAG_NAME    "CallRecLib"
 
@@ -124,9 +130,9 @@ int load(JNIEnv *env, jobject thiz) {
 
     pthread_t newthread = (pthread_t) thiz;
 
-    handleLibMedia = dlopen("libmedia.so", RTLD_NOW | RTLD_GLOBAL);
+    handleLibMedia =fake_dlopen("/system/lib64/libmedia.so", RTLD_NOW | RTLD_GLOBAL);
     if (handleLibMedia != NULL) {
-        setParameters = (int (*)(int, void *)) dlsym(handleLibMedia,
+        setParameters = (int (*)(int, void *))fake_dlsym(handleLibMedia,
                                                      "_ZN7android11AudioSystem13setParametersEiRKNS_7String8E");
         if (setParameters != NULL) {
             result = 0;
@@ -135,12 +141,12 @@ int load(JNIEnv *env, jobject thiz) {
         result = -1;
     }
 
-    handleLibUtils = dlopen("libutils.so", RTLD_NOW | RTLD_GLOBAL);
+    handleLibUtils =fake_dlopen("/system/lib64/libutils.so", RTLD_NOW | RTLD_GLOBAL);
     if (handleLibUtils != NULL) {
-        string8 = (CreateString8) dlsym(handleLibUtils,
+        string8 = (CreateString8) fake_dlsym(handleLibUtils,
                                         "_ZN7android7String8C2EPKc");
 
-        string16 = (CreateString16) (dlsym(handleLibUtils,
+        string16 = (CreateString16) (fake_dlsym(handleLibUtils,
                                            "_ZN7android8String16C1EPKc"));
 
         if (string16 == NULL) {
@@ -160,7 +166,7 @@ int load(JNIEnv *env, jobject thiz) {
 
     int resultTh = pthread_create(&newthread, NULL, tasp, NULL);
 
-//    LOGI("pthread_create result: %i", resultTh);
+    LOGI("pthread_create result: %i", resultTh);
 
 //    dlclose(handleLibMedia);
 //    dlclose(handleLibUtils);

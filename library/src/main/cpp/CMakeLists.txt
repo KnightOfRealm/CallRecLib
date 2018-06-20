@@ -4,6 +4,8 @@ add_library(callrecfix SHARED
             audio.h
             Audio.cpp
             CallRecFix.cpp
+            fake_dlfcn.c
+            main.h
             )
 
 # Include libraries needed for callrecfix lib

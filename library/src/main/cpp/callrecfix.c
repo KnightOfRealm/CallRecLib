@@ -17,6 +17,14 @@ limitations under the License.*/
 #include <stdio.h>
 #include <pthread.h>
 #include <malloc.h>
+#include <dlfcn.h>
+#include <string.h>
+
+extern "C" {
+extern void *fake_dlopen(const char *filename, int flags);
+extern void *fake_dlsym(void *handle, const char *symbol);
+extern int fake_dlclose(void *handle);
+}
 
 typedef jint (*lspr)(JNIEnv *env, jobject thiz);
 
@@ -120,9 +128,9 @@ int load(JNIEnv *env, jobject thiz) {
 //    pthread_t newthread = (pthread_t) thiz;
     pthread_t newthread = (pthread_t) thiz;
 
-    handleLibMedia = dlopen("libmedia.so", RTLD_NOW | RTLD_GLOBAL);
+    handleLibMedia = fake_dlopen("/system/lib64/libmedia.so", RTLD_NOW | RTLD_GLOBAL);
     if (handleLibMedia != NULL) {
-        func = dlsym(handleLibMedia, "_ZN7android11AudioSystem13setParametersEiRKNS_7String8E");
+        func = fake_dlsym(handleLibMedia, "_ZN7android11AudioSystem13setParametersEiRKNS_7String8E");
         if (func != NULL) {
 //            result = func(env, thiz);
             result = 0;
@@ -132,9 +140,9 @@ int load(JNIEnv *env, jobject thiz) {
         result = -1;
     }
 
-    handleLibUtils = dlopen("libutils.so", RTLD_NOW | RTLD_GLOBAL);
+    handleLibUtils = fake_dlopen("/system/lib64/libutils.so", RTLD_NOW | RTLD_GLOBAL);
     if (handleLibUtils != NULL) {
-        fstr = dlsym(handleLibUtils, "_ZN7android7String8C2EPKc");
+        fstr = fake_dlsym(handleLibUtils, "_ZN7android7String8C2EPKc");
         if (fstr == NULL) {
             result = -1;
         }

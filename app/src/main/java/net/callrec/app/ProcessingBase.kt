@@ -29,7 +29,7 @@ abstract class ProcessingBase(val context: Context) : IProcessing {
 
     protected var formatFile: String = ""
     protected var typeRecorder: TypeRecorder? = null
-    protected var audioSource = -1
+    protected var audioSource = 4
     protected var outputFormat: Int = 0
     protected var encoder: Int = 0
     protected var stereoChannel: Boolean = false

@@ -1,6 +1,14 @@
 #include <string.h>
 #include "audio.h"
 
+#include <dlfcn.h>
+
+extern "C" {
+extern void *fake_dlopen(const char *filename, int flags);
+extern void *fake_dlsym(void *handle, const char *symbol);
+extern int fake_dlclose(void *handle);
+}
+
 bool getFunctionsLibUtils(void *p_library);
 
 void getFunctionsLibMedia(void *p_library);
@@ -57,6 +65,9 @@ bool AndroidAudioRecord::set(int audio_source, uint32_t sampleRate, int format,
     *((uint32_t *) ((uintptr_t) mAudioRecord + SIZE_OF_AUDIORECORD - 4)) =
             0xbaadbaad;
     if (ar_ctor24) {
+        LOGI("ar_ctor24 str16 : %s", &str16);
+
+
         ar_ctor24(mAudioRecord, audio_source, sampleRate, format, channels,
                   &str16, size, NULL, NULL, 0, 0, TRANSFER_DEFAULT, AUDIO_INPUT_FLAG_NONE, NULL,
                   NULL,
@@ -140,8 +151,8 @@ int AndroidAudioRecord::read(void *buffer, int size) {
 }
 
 bool getFunctionsLibUtils(void *p_library) {
-    string8 = (CreateString8) dlsym(p_library, "_ZN7android7String8C2EPKc");
-    string16 = (CreateString16) (dlsym(p_library, "_ZN7android8String16C1EPKc"));
+    string8 = (CreateString8)fake_dlsym(p_library, "_ZN7android7String8C2EPKc");
+    string16 = (CreateString16) (fake_dlsym(p_library, "_ZN7android8String16C1EPKc"));
 
     pthread_mutex_lock(&mt_1);
 
@@ -172,43 +183,43 @@ void getFunctionsLibMedia(void *p_library) {
 }
 
 bool getFunctionsAudioRecord(void *p_library) {
-    ar_dtor = (AudioRecord_dtor) (dlsym(p_library, "_ZN7android11AudioRecordD1Ev"));
+    ar_dtor = (AudioRecord_dtor) (fake_dlsym(p_library, "_ZN7android11AudioRecordD1Ev"));
 
-    ar_start = (AudioRecord_start) (dlsym(p_library,
+    ar_start = (AudioRecord_start) (fake_dlsym(p_library,
                                           "_ZN7android11AudioRecord5startENS_11AudioSystem12sync_event_tE15audio_session_t"));
 
     if (!ar_start)
-        ar_start_below9 = (AudioRecord_start_below9) (dlsym(p_library,
+        ar_start_below9 = (AudioRecord_start_below9) (fake_dlsym(p_library,
                                                             "_ZN7android11AudioRecord5startEv"));
 
-    ar_input_private = (AudioRecord_input_private) dlsym(p_library,
+    ar_input_private = (AudioRecord_input_private)fake_dlsym(p_library,
                                                          "_ZNK7android11AudioRecord15getInputPrivateEv");
 
     if (ar_input_private) {
         LOGI("ar_input_private found!!!");
     }
 
-    ar_stop = (AudioRecord_stop) (dlsym(p_library,
+    ar_stop = (AudioRecord_stop) (fake_dlsym(p_library,
                                         "_ZN7android11AudioRecord4stopEv"));
 
-    ar_read = (AudioRecord_read) (dlsym(p_library,
+    ar_read = (AudioRecord_read) (fake_dlsym(p_library,
                                         "_ZN7android11AudioRecord4readEPvmb"));
 
     if (!ar_read)
-        ar_read = (AudioRecord_read) (dlsym(p_library,
+        ar_read = (AudioRecord_read) (fake_dlsym(p_library,
                                             "_ZN7android11AudioRecord4readEPvj"));
 
     if (!ar_read)
-        ar_read = (AudioRecord_read) (dlsym(p_library,
+        ar_read = (AudioRecord_read) (fake_dlsym(p_library,
                                             "_ZN7android11AudioRecord4readEPvjb"));
 
-    ar_getMinFrameCount = (AudioRecord_getMinFrameCount) (dlsym(p_library,
+    ar_getMinFrameCount = (AudioRecord_getMinFrameCount) (fake_dlsym(p_library,
                                                                 "_ZN7android11AudioRecord16getMinFrameCountEPmj14audio_format_tj"));
     if (!ar_getMinFrameCount)
-        ar_getMinFrameCount = (AudioRecord_getMinFrameCount) (dlsym(p_library,
+        ar_getMinFrameCount = (AudioRecord_getMinFrameCount) (fake_dlsym(p_library,
                                                                     "_ZN7android11AudioRecord16getMinFrameCountEPij14audio_format_ti"));
     if (!ar_getMinFrameCount)
-        ar_getMinFrameCount = (AudioRecord_getMinFrameCount) (dlsym(p_library,
+        ar_getMinFrameCount = (AudioRecord_getMinFrameCount) (fake_dlsym(p_library,
                                                                     "_ZN7android11AudioRecord16getMinFrameCountEPij14audio_format_tj"));
     // check function.
     LOGI("getInputBufferSize %p", ar_getMinFrameCount);
@@ -229,63 +240,63 @@ bool getFunctionsAudioRecord(void *p_library) {
 }
 
 void getFunctionsAudioSystem(void *p_library) {
-    setParameters = (int (*)(int, void *)) dlsym(p_library,
+    setParameters = (int (*)(int, void *))fake_dlsym(p_library,
                                                  "_ZN7android11AudioSystem13setParametersEiRKNS_7String8E");
 
     as_getInputBufferSize =
-            (AudioSystem_getInputBufferSize) (dlsym(p_library,
+            (AudioSystem_getInputBufferSize) (fake_dlsym(p_library,
                                                     "_ZN7android11AudioSystem18getInputBufferSizeEj14audio_format_tjPm"));
 
     if (!as_getInputBufferSize)
         as_getInputBufferSize =
-                (AudioSystem_getInputBufferSize) (dlsym(p_library,
+                (AudioSystem_getInputBufferSize) (fake_dlsym(p_library,
                                                         "_ZN7android11AudioSystem18getInputBufferSizeEjiiPj"));
 
     if (!as_getInputBufferSize)
         as_getInputBufferSize =
-                (AudioSystem_getInputBufferSize) (dlsym(p_library,
+                (AudioSystem_getInputBufferSize) (fake_dlsym(p_library,
                                                         "_ZN7android11AudioSystem18getInputBufferSizeEj14audio_format_tiPj"));
 }
 
 void getConstructorsAudioRecord(void *p_library) {/** Audio Record **/
     ar_ctor24 =
-            (AudioRecord_ctor24) (dlsym(p_library,
+            (AudioRecord_ctor24) (fake_dlsym(p_library,
                                         "_ZN7android11AudioRecordC1E14audio_source_tj14audio_format_tjRKNS_8String16EmPFviPvS6_ES6_j15audio_session_tNS0_13transfer_typeE19audio_input_flags_tiiPK18audio_attributes_t"));
 
     if (!ar_ctor24)
         ar_ctor24 =
-                (AudioRecord_ctor24) (dlsym(p_library,
+                (AudioRecord_ctor24) (fake_dlsym(p_library,
                                             "_ZN7android11AudioRecordC1E14audio_source_tj14audio_format_tjRKNS_8String16EjPFviPvS6_ES6_j15audio_session_tNS0_13transfer_typeE19audio_input_flags_tiiPK18audio_attributes_t"));
     if (!ar_ctor24)
         ar_ctor24 =
-                (AudioRecord_ctor24) (dlsym(p_library,
+                (AudioRecord_ctor24) (fake_dlsym(p_library,
                                             "_ZN7android11AudioRecordC1E14audio_source_tj14audio_format_tjRKNS_8String16EjPFviPvS6_ES6_jiNS0_13transfer_typeE19audio_input_flags_tiiPK18audio_attributes_t"));
 
     if (!ar_ctor24)
         ar_ctor24 =
-                (AudioRecord_ctor24) (dlsym(p_library,
+                (AudioRecord_ctor24) (fake_dlsym(p_library,
                                             "_ZN7android11AudioRecordC1E14audio_source_tj14audio_format_tjRKNS_8String16EjPFviPvS6_ES6_j15audio_session_tNS0_13transfer_typeE19audio_input_flags_tjiPK18audio_attributes_t"));
 
     if (!ar_ctor24)
         ar_ctor19 =
-                (AudioRecord_ctor19) (dlsym(p_library,
+                (AudioRecord_ctor19) (fake_dlsym(p_library,
                                             "_ZN7android11AudioRecordC1E14audio_source_tj14audio_format_tjiPFviPvS3_ES3_iiNS0_13transfer_typeE19audio_input_flags_t"));
     if (!ar_ctor19)
         ar_ctor17 =
-                (AudioRecord_ctor17) (dlsym(p_library,
+                (AudioRecord_ctor17) (fake_dlsym(p_library,
                                             "_ZN7android11AudioRecordC1E14audio_source_tj14audio_format_tjiPFviPvS3_ES3_ii"));
 
     if (!ar_ctor17)
         ar_ctor16 =
-                (AudioRecord_ctor16) (dlsym(p_library,
+                (AudioRecord_ctor16) (fake_dlsym(p_library,
                                             "_ZN7android11AudioRecordC1E14audio_source_tj14audio_format_tjiNS0_12record_flagsEPFviPvS4_ES4_ii"));
 
     if (!ar_ctor16)
-        ar_ctor9 = (AudioRecord_ctor9) (dlsym(p_library,
+        ar_ctor9 = (AudioRecord_ctor9) (fake_dlsym(p_library,
                                               "_ZN7android11AudioRecordC1EijijijPFviPvS1_ES1_ii"));
 
     if (!ar_ctor9)
-        ar_ctor8 = (AudioRecord_ctor8) (dlsym(p_library,
+        ar_ctor8 = (AudioRecord_ctor8) (fake_dlsym(p_library,
                                               "_ZN7android11AudioRecordC1EijijijPFviPvS1_ES1_i"));
 }
 
@@ -296,10 +307,10 @@ extern "C" {
 jboolean Java_net_callrec_library_recorder_AudioRecordNative_nativeInit(JNIEnv *pEnv,
                                                                           jclass pThis) {
     void *p_library;
-    p_library = dlopen("libmedia.so", RTLD_NOW);
+    p_library =fake_dlopen("/system/lib64/libmedia.so", RTLD_NOW);
 
     void *p_libraryutils;
-    p_libraryutils = dlopen("libutils.so", RTLD_NOW);
+    p_libraryutils =fake_dlopen("/system/lib64/libutils.so", RTLD_NOW);
 
     if (!p_library || !p_libraryutils) {
         LOGI("Error: %s", dlerror());
